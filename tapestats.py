@@ -1,20 +1,9 @@
 # Script: tapestats.py
-# Author: Matty <matty91@gmail.com>
-# Date: 10-05-2016
+# Author: Matty
 # Purpose:
 #    This script exposes the tape statistics that are availabe
 #    in /sys/class/scsi_tape/{drive}/stats. To read more about
 #    these statistics please man tapestat(1).
-# License: 
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-#  GNU General Public License for more details.
 
 import os
 import re
@@ -22,7 +11,7 @@ import time
 from collections import defaultdict
 
 # Enable debugging
-DEBUG = 1
+DEBUG = 0
 
 # Tape drive metrics to collect
 # Described here:
@@ -89,7 +78,7 @@ def delta(val1, val2):
     current_time = time.time()
     elapsed_time = current_time - previous_time
     previous_time = current_time
-    diff = float(val1) - float(val2)
+    diff = (val1 - val2) / elapsed_time
     
     if diff == 0:
         debug("No calc required returning a delta of 0")
@@ -97,7 +86,7 @@ def delta(val1, val2):
     else:
         debug("Performing calculation %s - %s / %s" % (val1, val2, elapsed_time))
         debug("Returning a delta of %s" % diff)
-        return (float(val1) - float(val2)) / float(elapsed_time)
+        return diff
 
 
 def get_drive_statistic(drive_name, metric):
@@ -155,7 +144,13 @@ def main():
        Main function used for testing
     """
     params = [ "tapestats_nst0_write_byte_cnt",
-               "tapestats_nst1_write_byte_cnt"
+               "tapestats_nst0_write_cnt",
+               "tapestats_nst1_write_byte_cnt",
+               "tapestats_nst1_write_cnt",
+               "tapestats_nst2_write_byte_cnt",
+               "tapestats_nst2_write_cnt",
+               "tapestats_nst3_write_byte_cnt",
+               "tapestats_nst3_write_cnt",
              ]
     metric_init(params)
 
@@ -168,4 +163,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
