@@ -22,12 +22,13 @@ import time
 from collections import defaultdict
 
 # Enable debugging
-DEBUG = 0
+DEBUG = 1
 
 # Tape drive metrics to collect
 # Described here:
 #    https://www.kernel.org/doc/Documentation/scsi/st.txt
-TAPE_METRICS = ['read_cnt',
+TAPE_METRICS = [
+                'read_cnt',
                 'write_cnt',
                 'read_byte_cnt',
                 'write_byte_cnt'
@@ -146,10 +147,10 @@ def main():
     params = [ 
                #"tapestats_nst0_write_cnt",
                #"tapestats_nst0_write_byte_cnt",
-               #"tapestats_nst1_write_cnt",
-               #"tapestats_nst1_write_byte_cnt",
-               "tapestats_nst2_write_cnt",
-               "tapestats_nst2_write_byte_cnt",
+               "tapestats_nst1_write_cnt",
+               "tapestats_nst1_write_byte_cnt",
+               #"tapestats_nst2_write_cnt",
+               #"tapestats_nst2_write_byte_cnt",
                #"tapestats_nst3_write_cnt",
                #"tapestats_nst3_write_byte_cnt"
              ]
