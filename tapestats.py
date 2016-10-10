@@ -1,9 +1,20 @@
 # Script: tapestats.py
-# Author: Matty
+# Author: Matty <matty91@gmail.com>
+# Date: 10-05-2016
 # Purpose:
 #    This script exposes the tape statistics that are availabe
 #    in /sys/class/scsi_tape/{drive}/stats. To read more about
 #    these statistics please man tapestat(1).
+# License: 
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#  GNU General Public License for more details.
 
 import os
 import re
@@ -26,11 +37,7 @@ TAPE_METRICS = ['read_cnt',
 SYSFS_TAPE_PATH = "/sys/class/scsi_tape/"
 
 # Tape drive statistics
-tape_stats = defaultdict(lambda: defaultdict(int))
-
-# Save the previous time so we can average 
-# the values over a period of time 
-previous_time = 0
+tape_stats = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
 
 
 def debug(message):
@@ -55,7 +62,6 @@ def update_stats(name):
     """
        Ganglia callback used to retrieve stats
     """
-
     # Parse the name and pull out the tape drive and metric
     first = name.find('_')
     second = name.find('_', first + 1)
@@ -63,29 +69,27 @@ def update_stats(name):
     metric = name[second + 1:]
 
     current_value = get_drive_statistic(tape_drive, metric)
-    previous_value = tape_stats[tape_drive][metric]
+    previous_value = tape_stats[tape_drive][metric]["count"]
 
-    tape_stats[tape_drive][metric] = current_value
-    return delta(current_value, previous_value)
+    current_time = time.time()
+    elapsed_time = current_time - tape_stats[tape_drive][metric]["previous_time"]
+    tape_stats[tape_drive][metric]["previous_time"] = current_time
+
+    tape_stats[tape_drive][metric]["count"] = current_value
+    return delta(current_value, previous_value, elapsed_time)
 
 
-def delta(val1, val2):
+def delta(val1, val2, elapsed):
     """
        Return the difference between val1 and val2
     """
-    global previous_time 
-
-    current_time = time.time()
-    elapsed_time = current_time - previous_time
-    previous_time = current_time
-    diff = (val1 - val2) / elapsed_time
+    diff = (val1 - val2) / elapsed
     
     if diff == 0:
         debug("No calc required returning a delta of 0")
         return 0
     else:
-        debug("Performing calculation %s - %s / %s" % (val1, val2, elapsed_time))
-        debug("Returning a delta of %s" % diff)
+        debug("Performing calculation %f - %f / %f = %f" % (val1, val2, elapsed, diff))
         return diff
 
 
@@ -104,12 +108,8 @@ def init_tape_drive_metrics(tape_drive, metric):
     """
        Initialize the metrics when we start
     """
-
-    previous_time = time.time()
-    tape_stats[tape_drive][metric] = get_drive_statistic(tape_drive, metric)
-    debug("Set tape drive %s metric %s to %s" % (tape_drive,
-                                                 metric,
-                                                 tape_stats[tape_drive][metric]))
+    tape_stats[tape_drive][metric]["count"] = get_drive_statistic(tape_drive, metric)
+    tape_stats[tape_drive][metric]["previous_time"] = time.time()
 
 
 def metric_init(params):
@@ -143,22 +143,23 @@ def main():
     """
        Main function used for testing
     """
-    params = [ "tapestats_nst0_write_byte_cnt",
-               "tapestats_nst0_write_cnt",
-               "tapestats_nst1_write_byte_cnt",
-               "tapestats_nst1_write_cnt",
-               "tapestats_nst2_write_byte_cnt",
+    params = [ 
+               #"tapestats_nst0_write_cnt",
+               #"tapestats_nst0_write_byte_cnt",
+               #"tapestats_nst1_write_cnt",
+               #"tapestats_nst1_write_byte_cnt",
                "tapestats_nst2_write_cnt",
-               "tapestats_nst3_write_byte_cnt",
-               "tapestats_nst3_write_cnt",
+               "tapestats_nst2_write_byte_cnt",
+               #"tapestats_nst3_write_cnt",
+               #"tapestats_nst3_write_byte_cnt"
              ]
     metric_init(params)
 
-    for _ in range(10):
+    for _ in range(100000):
         for metric in params:
             stat = update_stats(metric)
-            time.sleep(5)
-            debug("Value returned for %s is %d" % ("tapestats_nst1_write_byte_cnt", int(stat)))
+            time.sleep(1)
+            debug("Value returned for %s is %d" % (metric, int(stat)))
 
 
 if __name__ == "__main__":
