@@ -22,7 +22,7 @@ import time
 from collections import defaultdict
 
 # Enable debugging
-DEBUG = 1
+DEBUG = 0
 
 # Tape drive metrics to collect
 # Described here:
